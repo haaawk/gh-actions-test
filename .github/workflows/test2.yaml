@@ -20,10 +20,15 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.issue.number
             });
+
+            // Fetch complete user details
+            const userDetails = await github.rest.users.getByUsername({
+              username: pr.data.user.login
+            });
             
             const authorInfo = `
             **Author Information:**
-            - Name: ${pr.data.user.name || 'Not provided'}
+            - Name: ${userDetails.data.name || 'Not provided'}
             - Login: @${pr.data.user.login}
             
             ---
