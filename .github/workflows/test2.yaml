@@ -27,11 +27,7 @@ jobs:
             });
             
             const authorInfo = `
-            **Author Information:**
-            - Name: ${userDetails.data.name || 'Not provided'}
-            - Login: @${pr.data.user.login}
-            
-            ---
+            Author: ${userDetails.data.name || 'Name not provided'} (@${pr.data.user.login})
             `;
             
             const updatedBody = `${pr.data.body || ''}\n\n${authorInfo}`;
