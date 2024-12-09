@@ -42,11 +42,7 @@ jobs:
             if (reviewerDetails.length > 0) {
               reviewerInfo = '\n**Reviewers:**\n';
               for (const reviewer of reviewerDetails) {
-                reviewerInfo += `
-- **${reviewer.login}**
-  - Name: ${reviewer.name || 'Not provided'}
-  - Login: @${reviewer.login}
-`;
+                reviewerInfo += `${reviewer.login} ${reviewer.name || 'Not provided'}`;
               }
               reviewerInfo += '\n---\n';
             }
