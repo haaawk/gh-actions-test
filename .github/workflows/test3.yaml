@@ -29,18 +29,27 @@ jobs:
               pull_number: context.issue.number
             });
 
-            // Get unique reviewers who have submitted reviews
+            // Get unique reviewers who have approved the PR
             const uniqueReviewers = new Set();
             const reviewerDetails = [];
 
+            // Process reviews in chronological order (oldest first)
+            // This way we'll get the most recent state for each reviewer
             for (const review of reviews.data) {
-              if (!uniqueReviewers.has(review.user.login)) {
+              if (review.state === 'APPROVED') {
                 uniqueReviewers.add(review.user.login);
-                const reviewerData = await github.rest.users.getByUsername({
-                  username: review.user.login
-                });
-                reviewerDetails.push(reviewerData.data);
+              } else if (review.state !== 'COMMENTED') {
+                // Remove reviewer if they changed their mind (dismissed or requested changes)
+                uniqueReviewers.delete(review.user.login);
               }
+            }
+
+            // Fetch details for approved reviewers
+            for (const reviewerLogin of uniqueReviewers) {
+              const reviewerData = await github.rest.users.getByUsername({
+                username: reviewerLogin
+              });
+              reviewerDetails.push(reviewerData.data);
             }
 
             // Build reviewer info section
