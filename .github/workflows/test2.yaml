@@ -25,9 +25,18 @@ jobs:
             const userDetails = await github.rest.users.getByUsername({
               username: pr.data.user.login
             });
-            
+
+            // Get commit details to fetch email
+            const commits = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const email = commits.data[0]?.commit?.author?.email || 'Not available';
+
             const authorInfo = `
-            Author: ${userDetails.data.name || 'Name not provided'} <${userDetails.data.email || 'Email not public'}>(@${pr.data.user.login})
+            Author: ${userDetails.data.name || 'Name not provided'} <${email}>(@${pr.data.user.login})
             `;
             
             const updatedBody = `${pr.data.body || ''}\n\n${authorInfo}`;
