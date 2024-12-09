@@ -22,47 +22,29 @@ jobs:
               pull_number: context.issue.number
             });
 
-            // Get all reviews
-            const reviews = await github.rest.pulls.listReviews({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            });
-
-            // Get unique reviewers who have approved the PR
-            const uniqueReviewers = new Set();
-            const reviewerDetails = [];
-
-            // Process reviews in chronological order (oldest first)
-            // This way we'll get the most recent state for each reviewer
-            for (const review of reviews.data) {
-              if (review.state === 'APPROVED') {
-                uniqueReviewers.add(review.user.login);
-              } else if (review.state !== 'COMMENTED') {
-                // Remove reviewer if they changed their mind (dismissed or requested changes)
-                uniqueReviewers.delete(review.user.login);
-              }
-            }
-
-            // Fetch details for approved reviewers
-            for (const reviewerLogin of uniqueReviewers) {
-              const reviewerData = await github.rest.users.getByUsername({
-                username: reviewerLogin
+            let updatedBody = `${pr.data.body}`;
+            if (context.eventName === 'pull_request_review' && context.payload.review.state === 'APPROVED') {
+              const reviewer = context.payload.review.user;
+              const reviewerDetails = await github.rest.users.getByUsername({
+                username: reviewer.login
               });
-              reviewerDetails.push(reviewerData.data);
-            }
 
-            // Build reviewer info section
-            let reviewerInfo = '';
-            if (reviewerDetails.length > 0) {
-              reviewerInfo = '\n**Reviewers:**\n';
-              for (const reviewer of reviewerDetails) {
-                reviewerInfo += `${reviewer.login} ${reviewer.name || 'Not provided'}`;
-              }
-              reviewerInfo += '\n---\n';
+              // Get reviewer's recent commits to fetch email
+              const recentCommits = await github.rest.repos.listCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                author: reviewer.login,
+                per_page: 1
+              });
+
+              const reviewerEmail = recentCommits.data[0]?.commit?.author?.email || 'Not available';
+              
+                const reviewerInfo = `
+                Approved by: ${reviewerDetails.data.name || 'Name not provided'} <${reviewerEmail}>(@${reviewer.login})
+                `;
+                
+                updatedBody = `${pr.data.body || ''}\n\n${reviewerInfo}`;
             }
-            
-            const updatedBody = `${pr.data.body || ''}\n\n${reviewerInfo}`;
             
             await github.rest.pulls.update({
               owner: context.repo.owner,
