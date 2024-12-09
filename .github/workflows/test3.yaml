@@ -16,6 +16,12 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
             // Get all reviews
             const reviews = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
@@ -42,11 +48,7 @@ jobs:
             if (reviewerDetails.length > 0) {
               reviewerInfo = '\n**Reviewers:**\n';
               for (const reviewer of reviewerDetails) {
-                reviewerInfo += `
-- **${reviewer.login}**
-  - Name: ${reviewer.name || 'Not provided'}
-  - Login: @${reviewer.login}
-`;
+                reviewerInfo += `${reviewer.login} ${reviewer.name || 'Not provided'}`;
               }
               reviewerInfo += '\n---\n';
             }
