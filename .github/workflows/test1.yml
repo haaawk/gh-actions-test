@@ -1,5 +1,8 @@
 name: Context testing
-on: push
+on:
+    pull_request:
+        types: [opened]
+
 
 jobs:
   dump_contexts_to_log:
