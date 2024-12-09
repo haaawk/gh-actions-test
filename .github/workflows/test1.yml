@@ -18,5 +18,4 @@ jobs:
           USER: ${{ github.event.pull_request.user.login }}
           BODY: ${{ github.event.pull_request.body }}
           TITLE: ${{ github.event.pull_request.title }}
-          SENDER: ${{ github.event.pull_request.sender.login }}
-        run: echo "$BRANCH" && echo "$USER" && echo "$PR_NUMBER" && echo "$BODY" && echo "$TITLE" && echo "$SENDER"
+        run: echo "$BRANCH" && echo "$USER" && echo "$PR_NUMBER" && echo "$BODY" && echo "$TITLE"
