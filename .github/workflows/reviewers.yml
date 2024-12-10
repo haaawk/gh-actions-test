@@ -1,14 +1,18 @@
-name: Add Author Info and FOO to PR Description
+name: Add Reviewer Info to PR Description
 on:
-    pull_request_review:
-        types: [submitted]
+  pull_request_review:
+    types: [submitted]
 
 permissions:
   pull-requests: write
   contents: read
 
+concurrency:
+  group: pr-description-updater-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
-  add-info:
+  add-reviewer-info:
     runs-on: ubuntu-latest
     steps:
       - name: Update PR Description
@@ -18,13 +22,13 @@ jobs:
           script: |
             console.log('Event name:', context.eventName);
             console.log('Review state:', context.payload.review?.state);
-            
+
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.issue.number
             });
-            
+
             console.log('Current PR body:', pr.data.body);
 
             let updatedBody = `${pr.data.body}`;
@@ -33,7 +37,7 @@ jobs:
               console.log('Processing approved review');
               const reviewer = context.payload.review.user;
               console.log('Reviewer:', reviewer.login);
-              
+
               const reviewerDetails = await github.rest.users.getByUsername({
                 username: reviewer.login
               });
@@ -48,26 +52,26 @@ jobs:
               });
               console.log('Found reviewer commits:', recentCommits.data.length);
 
-              const reviewerEmail = recentCommits.data[0]?.commit?.author?.email || 'Not available';
+              const reviewerEmail = recentCommits.data[0]?.commit?.author?.email || 'Email not available';
               console.log('Reviewer email:', reviewerEmail);
-              
+
               const reviewerInfo = `
-              Approved by: ${reviewerDetails.data.name || 'Name not provided'} <${reviewerEmail}>(@${reviewer.login})
+              Reviewed-by: ${reviewerDetails.data.name || 'Name not provided'} <${reviewerEmail}>(@${reviewer.login})
               `;
               console.log('Adding reviewer info:', reviewerInfo);
-                
-              updatedBody = `${pr.data.body || ''}\n\n${reviewerInfo}`;
+
+              updatedBody = `${pr.data.body || ''}\n${reviewerInfo}`;
             } else {
               console.log('Review not approved or wrong event type');
             }
-            
+
             console.log('Final body:', updatedBody);
-            
+
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.issue.number,
               body: updatedBody
             });
-            
+
             console.log('PR description updated successfully');
